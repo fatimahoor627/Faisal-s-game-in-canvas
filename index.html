@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>COLORSHIFT - 2D Neon Cyber-Arcade Adventure</title>
+  <meta name="description" content="A vibrant 2D arcade hyper-runner with 5-color shifting powers, 3D synthwave cyber-mountains, jump launch-pads, speed rings, and adventure quests.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800;900&family=Rajdhani:wght@600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <!-- Three.js Library -->
+  <script src="libs/three.min.js"></script>
+</head>
+<body>
+  <div id="game-container">
+    <!-- 3D Three.js WebGL Cyber-Horizon Background Canvas -->
+    <canvas id="bg-canvas"></canvas>
+
+    <!-- 2D Foreground Game Canvas -->
+    <canvas id="game-canvas"></canvas>
+
+    <!-- HUD Overlay -->
+    <div id="hud-overlay" class="hidden">
+      <!-- Top Bar: Scores & Stats -->
+      <div class="hud-top-bar">
+        <div class="hud-stat-box score-box">
+          <span class="hud-label">SCORE</span>
+          <span id="hud-score" class="hud-value glowing-cyan">0</span>
+        </div>
+
+        <div class="hud-stat-box best-box">
+          <span class="hud-label"><span class="trophy-icon">🏆</span> BEST</span>
+          <span id="hud-high-score" class="hud-value glowing-gold">0</span>
+        </div>
+
+        <div class="hud-stat-box distance-box">
+          <span class="hud-label">EXPEDITION</span>
+          <span id="hud-distance" class="hud-value">0m</span>
+        </div>
+
+        <div class="hud-combo-badge" id="hud-combo-container">
+          <span class="combo-label">STREAK</span>
+          <span id="hud-combo" class="combo-val">x1</span>
+        </div>
+
+        <!-- Active Quest Mini-Pill -->
+        <div id="hud-active-quest" class="hud-quest-pill" title="Current Adventure Quest">
+          <span class="quest-icon">🎯</span>
+          <span class="quest-text">Loading quest...</span>
+        </div>
+
+        <!-- 5-Color Quick Selector Bar -->
+        <div class="power-selector-bar">
+          <button class="power-pill active" data-power="red" title="1: Chrono Slow">
+            <span class="pill-dot red-dot"></span>
+            <span class="pill-name">SLOW</span>
+            <span class="pill-key">1</span>
+          </button>
+          <button class="power-pill" data-power="blue" title="2: Gravity Flight">
+            <span class="pill-dot blue-dot"></span>
+            <span class="pill-name">FLY</span>
+            <span class="pill-key">2</span>
+          </button>
+          <button class="power-pill" data-power="green" title="3: Hard-Light Bridge">
+            <span class="pill-dot green-dot"></span>
+            <span class="pill-name">BRIDGE</span>
+            <span class="pill-key">3</span>
+          </button>
+          <button class="power-pill" data-power="yellow" title="4: Hyperdash Blitz">
+            <span class="pill-dot yellow-dot"></span>
+            <span class="pill-name">BLITZ</span>
+            <span class="pill-key">4</span>
+          </button>
+          <button class="power-pill" data-power="purple" title="5: Time Rewind">
+            <span class="pill-dot purple-dot"></span>
+            <span class="pill-name">REWIND</span>
+            <span class="pill-key">5</span>
+          </button>
+        </div>
+
+        <!-- HUD Action Buttons -->
+        <div class="hud-actions">
+          <div id="hud-shield-icon" class="hud-action-icon shield-icon" title="Shield Active">🛡️</div>
+          <button id="hud-quests-btn" class="hud-action-btn" title="Adventure Quests (🏆)">🏆</button>
+          <button id="hud-customizer-btn" class="hud-action-btn" title="Character Skins (🎨)">🎨</button>
+          <button id="hud-settings-btn" class="hud-action-btn" title="Settings & Options (⚙️)">⚙️</button>
+          <button id="hud-sound-btn" class="hud-action-btn" title="Toggle Sound">🔊</button>
+          <button id="hud-quick-restart-btn" class="hud-action-btn" title="Quick Restart (R)">🔄</button>
+          <button id="hud-pause-btn" class="hud-action-btn" title="Pause Game (P)">⏸️</button>
+        </div>
+      </div>
+
+      <!-- Mobile / Touch Controls Overlay -->
+      <div id="touch-controls">
+        <div class="touch-dpad">
+          <button id="touch-left" class="touch-btn touch-arrow" aria-label="Move Left">◀</button>
+          <button id="touch-right" class="touch-btn touch-arrow" aria-label="Move Right">▶</button>
+        </div>
+
+        <div class="touch-actions">
+          <button id="touch-dash" class="touch-btn touch-dash-btn" aria-label="Air Dash (Q)">
+            <span class="dash-icon">💨</span>
+            <span class="dash-name">DASH</span>
+          </button>
+          <button id="touch-ability" class="touch-btn touch-ability-btn" aria-label="Activate Ability (E)">
+            <div id="ability-cooldown-fill" class="cooldown-fill"></div>
+            <div class="ability-btn-content">
+              <span class="ability-icon">⚡</span>
+              <span class="ability-name">ABILITY</span>
+            </div>
+          </button>
+          <button id="touch-jump" class="touch-btn touch-jump-btn" aria-label="Jump (Space)">
+            <span>JUMP</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Title / Start Screen -->
+    <div id="title-screen" class="modal-screen">
+      <div class="title-container glass-card">
+        <div class="logo-wrapper">
+          <h1 class="game-logo">COLOR<span class="logo-accent">SHIFT</span></h1>
+          <p class="game-tagline">2D CYBER-ARCADE ADVENTURE</p>
+        </div>
+
+        <!-- Mascot Hologram Preview -->
+        <div class="mascot-preview">
+          <div class="lumie-hologram">
+            <div class="mascot-core"></div>
+            <div class="mascot-eye left"></div>
+            <div class="mascot-eye right"></div>
+            <div class="mascot-halo"></div>
+          </div>
+          <p class="mascot-caption">Meet <strong>Lumie</strong>, the Prismatic Energy Adventurer</p>
+        </div>
+
+        <!-- 5-Color Powers Showcase Cards -->
+        <div class="powers-showcase-grid">
+          <div class="showcase-card red-card">
+            <div class="card-badge">RED (1)</div>
+            <h4>CHRONO SLOW</h4>
+            <p>Slows obstacles to 30% for bullet-time dodging.</p>
+          </div>
+          <div class="showcase-card blue-card">
+            <div class="card-badge">BLUE (2)</div>
+            <h4>GRAV FLIGHT</h4>
+            <p>Plasma thrusters for anti-gravity flight over hazards.</p>
+          </div>
+          <div class="showcase-card green-card">
+            <div class="card-badge">GREEN (3)</div>
+            <h4>LIGHT BRIDGE</h4>
+            <p>Builds solid temporary platforms across chasms.</p>
+          </div>
+          <div class="showcase-card yellow-card">
+            <div class="card-badge">YELLOW (4)</div>
+            <h4>HYPERDASH</h4>
+            <p>Supersonic blitz + coin magnet + obstacle smash.</p>
+          </div>
+          <div class="showcase-card purple-card">
+            <div class="card-badge">PURPLE (5)</div>
+            <h4>TIME REWIND</h4>
+            <p>Reverses time 3.5s with VHS glitch to undo mistakes.</p>
+          </div>
+        </div>
+
+        <!-- Adventure Features Bar -->
+        <div class="adventure-features-bar">
+          <span class="adv-feature">🚀 Jump Launch-Pads</span>
+          <span class="adv-feature">🌀 Speed Boost Rings</span>
+          <span class="adv-feature">💎 Mystery Relics</span>
+          <span class="adv-feature">🏰 Sky Platforms</span>
+        </div>
+
+        <!-- Controls Guide -->
+        <div class="controls-guide">
+          <div class="ctrl-group">
+            <span class="key-badge">A / D</span> Move
+          </div>
+          <div class="ctrl-group">
+            <span class="key-badge">SPACE / W</span> Jump & Double Jump
+          </div>
+          <div class="ctrl-group">
+            <span class="key-badge">Q</span> Air Dash
+          </div>
+          <div class="ctrl-group">
+            <span class="key-badge">E / SHIFT</span> Use Color Ability
+          </div>
+          <div class="ctrl-group">
+            <span class="key-badge">1 - 5</span> Switch Power
+          </div>
+        </div>
+
+        <!-- Start & Quick Options Buttons -->
+        <div class="title-btn-row">
+          <button id="btn-start-game" class="btn-primary-neon pulse-animation">
+            <span>START EXPEDITION</span>
+            <span class="btn-subtext">PRESS SPACE OR TAP</span>
+          </button>
+          <div class="title-aux-buttons">
+            <button id="title-settings-btn" class="btn-secondary-neon" title="Game Settings">⚙️ Options</button>
+            <button id="title-customizer-btn" class="btn-secondary-neon" title="Customize Skins">🎨 Skins</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pause Modal -->
+    <div id="pause-modal" class="modal-screen hidden">
+      <div class="modal-card glass-card">
+        <h2 class="modal-title">GAME PAUSED</h2>
+        <div class="modal-actions">
+          <button id="btn-resume" class="btn-primary-neon">RESUME (ESC / P)</button>
+          <button id="btn-restart" class="btn-secondary-neon">RESTART (R)</button>
+        </div>
+        <div class="pause-tips">
+          <p>💡 Tip: Step on glowing <strong>Cyan Jump Pads</strong> to launch onto secret high-altitude coin lanes!</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Settings / Options Modal -->
+    <div id="settings-modal" class="modal-screen hidden">
+      <div class="modal-card glass-card settings-card">
+        <h2 class="modal-title">GAME OPTIONS</h2>
+
+        <!-- Game Mode Selection -->
+        <div class="setting-group">
+          <label class="setting-label">ADVENTURE MODE</label>
+          <div class="mode-select-row">
+            <button class="mode-btn active" data-mode="adventure">🛡️ Standard</button>
+            <button class="mode-btn" data-mode="zen">🧘 Zen (No Death)</button>
+            <button class="mode-btn" data-mode="overdrive">⚡ Overdrive 1.5x</button>
+          </div>
+        </div>
+
+        <!-- Graphics Quality -->
+        <div class="setting-group">
+          <label class="setting-label">3D SYNTHWAVE BACKGROUND</label>
+          <div class="mode-select-row">
+            <button class="gfx-btn active" data-gfx="high">Ultra Mountains</button>
+            <button class="gfx-btn" data-gfx="medium">Balanced</button>
+            <button class="gfx-btn" data-gfx="low">Lite 2D</button>
+          </div>
+        </div>
+
+        <!-- Audio Volume Controls -->
+        <div class="setting-group">
+          <label class="setting-label">MUSIC VOLUME</label>
+          <input type="range" id="setting-music-vol" min="0" max="1" step="0.05" value="0.22" class="slider-control">
+        </div>
+
+        <div class="setting-group">
+          <label class="setting-label">SFX VOLUME</label>
+          <input type="range" id="setting-sfx-vol" min="0" max="1" step="0.05" value="0.8" class="slider-control">
+        </div>
+
+        <!-- Screen Shake Toggle -->
+        <div class="setting-group toggle-row">
+          <label class="setting-label" for="setting-shake">SCREEN SHAKE EFFECTS</label>
+          <input type="checkbox" id="setting-shake" checked class="checkbox-control">
+        </div>
+
+        <button id="btn-close-settings" class="btn-primary-neon">SAVE & CLOSE</button>
+      </div>
+    </div>
+
+    <!-- Character Customizer Modal -->
+    <div id="customizer-modal" class="modal-screen hidden">
+      <div class="modal-card glass-card customizer-card">
+        <h2 class="modal-title">LUMIE SKINS & TRAILS</h2>
+
+        <div class="setting-group">
+          <label class="setting-label">LUMIE CORE HUE</label>
+          <div class="skin-grid">
+            <button class="skin-choice active" data-skin="classic" style="border-color: #00f0ff;">
+              <span class="color-dot" style="background: #00f0ff;"></span> Classic Cyan
+            </button>
+            <button class="skin-choice" data-skin="amber" style="border-color: #ffbe0b;">
+              <span class="color-dot" style="background: #ffbe0b;"></span> Solar Amber
+            </button>
+            <button class="skin-choice" data-skin="magenta" style="border-color: #ff0077;">
+              <span class="color-dot" style="background: #ff0077;"></span> Cyber Magenta
+            </button>
+            <button class="skin-choice" data-skin="emerald" style="border-color: #00ff88;">
+              <span class="color-dot" style="background: #00ff88;"></span> Jade Spirit
+            </button>
+            <button class="skin-choice" data-skin="violet" style="border-color: #c800ff;">
+              <span class="color-dot" style="background: #c800ff;"></span> Shadow Violet
+            </button>
+            <button class="skin-choice" data-skin="gold" style="border-color: #ffd700;">
+              <span class="color-dot" style="background: #ffd700;"></span> Sovereign Gold
+            </button>
+          </div>
+        </div>
+
+        <div class="setting-group">
+          <label class="setting-label">MOTION TRAIL FX</label>
+          <div class="trail-select-row">
+            <button class="trail-choice active" data-trail="plasma">Plasma Ribbon</button>
+            <button class="trail-choice" data-trail="sparks">Stardust Sparks</button>
+          </div>
+        </div>
+
+        <button id="btn-close-customizer" class="btn-primary-neon">APPLY CUSTOMIZATION</button>
+      </div>
+    </div>
+
+    <!-- Adventure Quests & Achievements Modal -->
+    <div id="quests-modal" class="modal-screen hidden">
+      <div class="modal-card glass-card quests-card">
+        <h2 class="modal-title">EXPEDITION QUESTS</h2>
+        <div id="quests-modal-list" class="quests-list">
+          <!-- Dynamically populated -->
+        </div>
+        <button id="btn-close-quests" class="btn-primary-neon">CONTINUE EXPEDITION</button>
+      </div>
+    </div>
+
+    <!-- Game Over Modal -->
+    <div id="gameover-modal" class="modal-screen hidden">
+      <div class="modal-card glass-card gameover-card">
+        <div id="new-best-badge" class="new-best-ribbon hidden">★ NEW BEST EXPEDITION! ★</div>
+        <h2 class="modal-title gameover-title">EXPEDITION REPORT</h2>
+        <div id="gameover-rank-badge" class="rank-sub-badge">Rank 1: Neon Scout</div>
+
+        <div class="gameover-score-hero">
+          <span class="score-hero-label">FINAL SCORE</span>
+          <span id="final-score" class="score-hero-value glowing-cyan">0</span>
+        </div>
+
+        <!-- Stats Breakdown Grid -->
+        <div class="stats-grid">
+          <div class="stat-item">
+            <span class="stat-name">RECORD BEST</span>
+            <span id="best-score-display" class="stat-val glowing-gold">0</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-name">DISTANCE</span>
+            <span id="stat-distance" class="stat-val">0m</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-name">COINS</span>
+            <span id="stat-coins" class="stat-val">0</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-name">MAX COMBO</span>
+            <span id="stat-combo" class="stat-val">x1</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-name">POWERS USED</span>
+            <span id="stat-powers" class="stat-val">0</span>
+          </div>
+        </div>
+
+        <div class="modal-actions">
+          <button id="btn-play-again" class="btn-primary-neon pulse-animation">PLAY AGAIN (R)</button>
+          <button id="btn-share-score" class="btn-secondary-neon" onclick="copyScoreToClipboard()">SHARE RECORD</button>
+        </div>
+        <div id="toast-message" class="toast-hidden">Record copied to clipboard!</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function copyScoreToClipboard() {
+      const score = document.getElementById('final-score').innerText;
+      const dist = document.getElementById('stat-distance').innerText;
+      const text = `🎮 I just scored ${score} pts (${dist}) in COLORSHIFT Adventure! Can you beat my record?`;
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(text);
+        const toast = document.getElementById('toast-message');
+        toast.innerText = 'Record copied to clipboard!';
+        toast.className = 'toast-visible';
+        setTimeout(() => { toast.className = 'toast-hidden'; }, 2200);
+      }
+    }
+  </script>
+
+  <!-- Game Engine Scripts -->
+  <script src="js/audio.js"></script>
+  <script src="js/background3d.js"></script>
+  <script src="js/particles.js"></script>
+  <script src="js/powers.js"></script>
+  <script src="js/player.js"></script>
+  <script src="js/world.js"></script>
+  <script src="js/adventure.js"></script>
+  <script src="js/game.js"></script>
+</body>
+</html>
